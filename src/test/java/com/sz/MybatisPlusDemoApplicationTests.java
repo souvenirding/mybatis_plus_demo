@@ -2,6 +2,7 @@ package com.sz;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.sun.rowset.internal.Row;
 import com.sz.dao.StudentMapper;
 import com.sz.pojo.Student;
 import org.junit.Test;
@@ -86,7 +87,7 @@ public class MybatisPlusDemoApplicationTests {
         list.forEach(System.out::println);
     }
 
-    //查询所有，但只要id和name
+    //查询所有:selectList，但只要id和name，其他字段会为null
     //DEBUG==>  Preparing: SELECT stuid,stuname FROM tblstudent
     @Test
     public void select2() {
@@ -96,8 +97,19 @@ public class MybatisPlusDemoApplicationTests {
         list.forEach(System.out::print);
     }
 
-    //查询所有，但不要sex和age
+    //查询所有:selectMaps，但只要id和name，其他字段不会输出，只有id和name
+    //{stuid=1000, stuname=张无忌}{stuid=1001, stuname=周芷若}{stuid=1002, stuname=杨过}.......
+    @Test
+    public void select2Maps() {
+        QueryWrapper<Student> wrapper = new QueryWrapper<>();
+        wrapper.select("stuid", "stuname");
+        List<Map<String, Object>> list = studentMapper.selectMaps(wrapper);
+        list.forEach(System.out::print);
+    }
+
+    //查询所有，但不要sex和age，其字段会为null
     //DEBUG==>  Preparing: SELECT stuid,stuname FROM tblstudent
+    //{stuid=1000, stuname=张无忌}{stuid=1001, stuname=周芷若}{stuid=1002, stuname=杨过}
     @Test
     public void select3() {
         QueryWrapper<Student> wrapper = new QueryWrapper<>();
@@ -106,6 +118,19 @@ public class MybatisPlusDemoApplicationTests {
         List<Student> list = studentMapper.selectList(wrapper);
         list.forEach(System.out::print);
     }
+
+    //查询所有，但不要sex和age，其字段不会输出，只有其他字段
+
+    //DEBUG==>  Preparing: SELECT stuid,stuname FROM tblstudent
+    @Test
+    public void select3Maps() {
+        QueryWrapper<Student> wrapper = new QueryWrapper<>();
+        wrapper.select(Student.class, stu -> !stu.getColumn().equals("stusex") && !stu.getColumn().equals("stuage"));
+
+        List<Map<String, Object>> list = studentMapper.selectMaps(wrapper);
+        list.forEach(System.out::print);
+    }
+
 
     //condition:多用于模糊查询,like(boolean condition, R column, Object val)
 //    DEBUG==>  Preparing: SELECT stuid,stusex,stuage,stuname FROM tblstudent WHERE (stuname LIKE ?)
@@ -137,17 +162,36 @@ public class MybatisPlusDemoApplicationTests {
      */
 
     //AllEq
-//    DEBUG==>  Preparing: SELECT stusex,stuid,stuage,stuname FROM tblstudent WHERE (stuname = ? AND stuage = ?)
+//    DEBUG==>  Preparing: SELECT stusex,stuid,stuage,stuname FROM tblstudent WHERE (stuname = ?)
 //    DEBUG==> Parameters: 张三丰(String), 18(Integer)
     @Test
     public void testAllEq() {
         QueryWrapper<Student> wrapper = new QueryWrapper<>();
         Map<String, Object> paramas = new HashMap<>();
         paramas.put("stuname", "张三丰");
-        paramas.put("stuage", 18);
-        wrapper.allEq(paramas);
+        paramas.put("stuage", null);
+        //wrapper.allEq(paramas);
+        //参数1：过滤的执行条件，返回 true 来允许字段传入比对条件中
+        //参数3：null2IsNull 是否参数为 null 自动执行 isNull 方法, false 则忽略这个字段
+        wrapper.allEq((k, v) -> k.equals("stuname"), paramas, false);
         List<Student> list = studentMapper.selectList(wrapper);
         list.forEach(System.out::print);
     }
 
+    //最大年龄，最小年龄，平均年龄，年龄综合，通过男女分组,取年龄综合大于20
+//    DEBUG==>  Preparing: SELECT max(stuage) max,min(stuage) min,avg(stuage) avg,sum(stuage) sum FROM tblstudent GROUP BY stusex HAVING sum(stuage)>?
+//    DEBUG==> Parameters: 200(Integer)
+//    TRACE<==    Columns: max, min, avg, sum
+//    TRACE<==        Row: 21, 17, 18.6364, 205
+//    TRACE<==        Row: 59, 17, 24.2857, 340
+//    DEBUG<==      Total: 2
+//    {min=17, avg=18.6364, max=21, sum=205}{min=17, avg=24.2857, max=59, sum=340}
+    @Test
+    public void selectMaps() {
+        QueryWrapper<Student> wrapper = new QueryWrapper<>();
+        wrapper.select("max(stuage) max","min(stuage) min","avg(stuage) avg","sum(stuage) sum")
+                .groupBy("stusex").having("sum(stuage)>{0}",200);
+        List<Map<String, Object>> list = studentMapper.selectMaps(wrapper);
+        list.forEach(System.out::print);
+    }
 }
