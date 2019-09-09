@@ -192,6 +192,13 @@ public class MybatisPlusDemoApplicationTests {
         wrapper.select("max(stuage) max","min(stuage) min","avg(stuage) avg","sum(stuage) sum")
                 .groupBy("stusex").having("sum(stuage)>{0}",200);
         List<Map<String, Object>> list = studentMapper.selectMaps(wrapper);
-        list.forEach(System.out::print);
+        list.forEach(System.out::println);
+    }
+
+    //selectObjs:只返回第一列的值
+    @Test
+    public void selectObjs() {
+        List<Object> list = studentMapper.selectObjs(null);
+        list.forEach(System.out::println);
     }
 }
