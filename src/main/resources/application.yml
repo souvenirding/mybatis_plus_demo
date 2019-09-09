@@ -1,0 +1,14 @@
+# DataSource Config
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://192.168.4.191/homework
+    username: root
+    password: root
+logging:
+  level:
+   root: warn
+   com.sz.dao: trace
+  pattern:
+    console: '%p%m%n'
